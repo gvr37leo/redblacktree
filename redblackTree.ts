@@ -56,11 +56,37 @@ namespace BinaryTree{
                     grandparent.isRed = true
                     RedBlackNode.fix(grandparent,root)
                 }else{//black uncle
-                    var cases:Side[] = [self.isLeftOrRightChild(),parent.isLeftOrRightChild()]
+                    var cases:Side[] = [parent.isLeftOrRightChild(),self.isLeftOrRightChild()]
+                    
+                    
 
-
+                    if(cases[0] == Side.left){
+                        if(cases[1] == Side.left){//left-left
+                            RedBlackNode.lineRotate(self,Side.right)
+                        }else{//left-right
+                            RedBlackNode.rotate(parent,Side.left)
+                            RedBlackNode.lineRotate(self,Side.right)
+                        }
+                    }else{
+                        if(cases[1] == Side.left){//right-left
+                            RedBlackNode.rotate(parent,Side.right)
+                            RedBlackNode.lineRotate(self,Side.left)
+                        }else{//right-right
+                            RedBlackNode.lineRotate(self,Side.left)
+                        }
+                    }
                 }
             }
+        }
+
+        static lineRotate<T>(self:RedBlackNode<T>,side:Side){
+            var parent = self.parent
+            var grandparent = parent.parent
+
+            RedBlackNode.rotate(grandparent,side)
+            var temp = grandparent.isRed
+            grandparent.isRed = parent.isRed
+            parent.isRed = temp
         }
 
         static isRed<T>(node:RedBlackNode<T>):boolean{
