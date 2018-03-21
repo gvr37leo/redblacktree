@@ -4,7 +4,7 @@
   "description": "",
   "main": "package.js",
   "dependencies": {
-    "utilsx": "^1.7.0",
+    "utilsx": "^1.9.0",
     "vectorx": "^2.0.0"
   },
   "devDependencies": {},
