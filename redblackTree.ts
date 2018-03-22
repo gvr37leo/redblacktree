@@ -14,7 +14,16 @@ namespace BinaryTree{
         insert(key:number,val:T){
             if(this.root === null){
                 this.root = new RedBlackNode(key,val,false)
+            }else{
+                RedBlackNode.rbInsert(this.root,new RedBlackNode(key,val,true),this.root)
+                this.root = RedBlackNode.getRoot(this.root)
             }
+        }
+
+        toArray():RedBlackNode<T>[][]{
+            var array:RedBlackNode<T>[][] = []
+            RedBlackNode.toArray(this.root,array,0)
+            return array
         }
     }
 
@@ -30,6 +39,7 @@ namespace BinaryTree{
         key:number
         value:T
         isRed:boolean
+        isDoubleBlack:boolean = false
 
         constructor(key:number,value:T,isRed:boolean){
             this.key = key
@@ -37,20 +47,37 @@ namespace BinaryTree{
             this.isRed = isRed
         }
 
-        
+        static getRoot<T>(node:RedBlackNode<T>):RedBlackNode<T>{
+            if(node.parent == null){
+                return node
+            }else{
+                return RedBlackNode.getRoot(node.parent)
+            }
+        }
 
-        
+        static toArray<T>(node:RedBlackNode<T>,array:RedBlackNode<T>[][],depth:number){
+            if(node == null){
+                return
+            }
+            if(array[depth] == null){
+                array[depth] = []
+            }
+
+            array[depth].push(node)
+            RedBlackNode.toArray(node.get(Side.left),array,depth + 1)
+            RedBlackNode.toArray(node.get(Side.right),array,depth + 1)
+        }
 
         static fix<T>(self:RedBlackNode<T>,root:RedBlackNode<T>){
             
             if(self === root){
                 self.isRed = false
-            }else if(self.parent.isRed){
+            }else if(RedBlackNode.isRed(self.parent)){
                 var parent = self.parent
                 var grandparent = parent.parent
                 var uncle = parent.getBrother()
 
-                if(uncle.isRed){
+                if(RedBlackNode.isRed(uncle)){
                     parent.isRed = false
                     uncle.isRed = false
                     grandparent.isRed = true
@@ -89,6 +116,10 @@ namespace BinaryTree{
             parent.isRed = temp
         }
 
+        static isBlack<T>(node:RedBlackNode<T>):boolean{
+            return !RedBlackNode.isRed(node)
+        }
+
         static isRed<T>(node:RedBlackNode<T>):boolean{
             return node !== null && node.isRed
         }
@@ -107,7 +138,7 @@ namespace BinaryTree{
 
         static rbInsert<T>(self:RedBlackNode<T>,newNode:RedBlackNode<T>,root:RedBlackNode<T>){
             RedBlackNode.insert(self,newNode)
-            RedBlackNode.fix(self,root)
+            RedBlackNode.fix(newNode,root)
         }
 
         private static insert<T>(self:RedBlackNode<T>,newNode:RedBlackNode<T>):RedBlackNode<T>{
@@ -139,6 +170,29 @@ namespace BinaryTree{
             )
         }
 
+        static rbRemove<T>(self:RedBlackNode<T>,key:number,root:RedBlackNode<T>){
+            var removedNode = RedBlackNode.remove(self,key)
+            var replacementNode:RedBlackNode<T>;
+            RedBlackNode.removeFix(replacementNode,removedNode,root)
+        }
+
+        static removeFix<T>(replacementNode:RedBlackNode<T>,removedNode:RedBlackNode<T>,root:RedBlackNode<T>){
+            if(replacementNode.isRed || removedNode.isRed){
+
+            }else if(!replacementNode.isRed && !removedNode.isRed){
+                replacementNode.isDoubleBlack = true
+
+                if(replacementNode.isDoubleBlack && replacementNode != root){
+
+                    var sibling = replacementNode.getBrother()
+                    
+                    if(!sibling.isRed && (sibling.get(Side.left).isRed || sibling.get(Side.right).isRed)){
+
+                    }
+                }
+            }
+        }
+
         static remove<T>(self:RedBlackNode<T>,key:number):RedBlackNode<T>{
             return null
         }
@@ -153,17 +207,22 @@ namespace BinaryTree{
             }
         }
 
-        static rotate<T>(self:RedBlackNode<T>, side:Side){
+        static rotate<T>(node:RedBlackNode<T>, side:Side){
             var oppositeSide:Side = swapSide(side)
-            var child:RedBlackNode<T> = self.get(oppositeSide)
+            var parent:RedBlackNode<T> = node.parent
+            var child:RedBlackNode<T> = node.get(oppositeSide)
             var grandchild:RedBlackNode<T> = child.get(side)
-            var parent = self.parent
 
-            self.children[oppositeSide] = grandchild
-            self.parent = child
             child.parent = parent
-            child.children[side] = self
-            grandchild.parent = self
+            node.set(oppositeSide,grandchild)
+            if(grandchild){
+                grandchild.parent = node
+            }
+            if(parent){
+                parent.set(node.isLeftOrRightChild(), child)
+            }
+            child.set(side,node)
+            node.parent = child
         }
 
         get(side:Side):RedBlackNode<T>{
