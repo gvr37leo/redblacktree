@@ -13,9 +13,9 @@ namespace BinaryTree{
 
         insert(key:number,val:T){
             if(this.root === null){
-                this.root = new RedBlackNode(key,val,false)
+                this.root = new RedBlackNode(key,val,Color.black)
             }else{
-                RedBlackNode.rbInsert(this.root,new RedBlackNode(key,val,true),this.root)
+                RedBlackNode.rbInsert(this.root,new RedBlackNode(key,val,Color.red),this.root)
                 this.root = RedBlackNode.getRoot(this.root)
             }
         }
@@ -34,6 +34,8 @@ namespace BinaryTree{
 
     enum Side{left = 0,right = 1}
 
+    enum Color{red,black,doubleBlack}
+
     function swapSide(side:Side):Side{
         return 1 - side
     }
@@ -43,13 +45,12 @@ namespace BinaryTree{
         parent:RedBlackNode<T>
         key:number
         value:T
-        isRed:boolean
-        isDoubleBlack:boolean = false
+        color:Color
 
-        constructor(key:number,value:T,isRed:boolean){
+        constructor(key:number,value:T,color:Color){
             this.key = key
             this.value = value
-            this.isRed = isRed
+            this.color = color
         }
 
         static getRoot<T>(node:RedBlackNode<T>):RedBlackNode<T>{
@@ -89,7 +90,7 @@ namespace BinaryTree{
         
         draw(ctxt:CanvasRenderingContext2D, v:Vector2,depth:number){
             ctxt.beginPath()
-            if(this.isRed){
+            if(RedBlackNode.isRed(this)){
                 ctxt.fillStyle = 'red'
             }else{
                 ctxt.fillStyle = 'black'
@@ -98,20 +99,20 @@ namespace BinaryTree{
             ctxt.fill()
         }
 
-        static fix<T>(self:RedBlackNode<T>,root:RedBlackNode<T>){
+        static insertfix<T>(self:RedBlackNode<T>,root:RedBlackNode<T>){
             
             if(self === root){
-                self.isRed = false
+                self.color = Color.black
             }else if(RedBlackNode.isRed(self.parent)){
                 var parent = self.parent
                 var grandparent = parent.parent
                 var uncle = parent.getBrother()
 
                 if(RedBlackNode.isRed(uncle)){
-                    parent.isRed = false
-                    uncle.isRed = false
-                    grandparent.isRed = true
-                    RedBlackNode.fix(grandparent,root)
+                    parent.color = Color.black
+                    uncle.color = Color.black
+                    grandparent.color = Color.red
+                    RedBlackNode.insertfix(grandparent,root)
                 }else{//black uncle
                     var cases:Side[] = [parent.isLeftOrRightChild(),self.isLeftOrRightChild()]
                     
@@ -141,9 +142,9 @@ namespace BinaryTree{
             var grandparent = parent.parent
 
             RedBlackNode.rotate(grandparent,side)
-            var temp = grandparent.isRed
-            grandparent.isRed = parent.isRed
-            parent.isRed = temp
+            var temp = grandparent.color
+            grandparent.color = parent.color
+            parent.color = temp
         }
 
         static isBlack<T>(node:RedBlackNode<T>):boolean{
@@ -151,7 +152,7 @@ namespace BinaryTree{
         }
 
         static isRed<T>(node:RedBlackNode<T>):boolean{
-            return node !== null && node.isRed
+            return node !== null && node.color == Color.red
         }
 
         getBrother():RedBlackNode<T>{
@@ -168,7 +169,7 @@ namespace BinaryTree{
 
         static rbInsert<T>(self:RedBlackNode<T>,newNode:RedBlackNode<T>,root:RedBlackNode<T>){
             RedBlackNode.insert(self,newNode)
-            RedBlackNode.fix(newNode,root)
+            RedBlackNode.insertfix(newNode,root)
         }
 
         private static insert<T>(self:RedBlackNode<T>,newNode:RedBlackNode<T>):RedBlackNode<T>{
@@ -201,30 +202,109 @@ namespace BinaryTree{
         }
 
         static rbRemove<T>(self:RedBlackNode<T>,key:number,root:RedBlackNode<T>){
-            var removedNode = RedBlackNode.remove(self,key)
-            var replacementNode:RedBlackNode<T>;
+            var outArray:RedBlackNode<T>[] = []
+            var removedNode = RedBlackNode.remove(self,key,outArray)
+            var replacementNode:RedBlackNode<T> = outArray[0];
             RedBlackNode.removeFix(replacementNode,removedNode,root)
         }
 
         static removeFix<T>(replacementNode:RedBlackNode<T>,removedNode:RedBlackNode<T>,root:RedBlackNode<T>){
-            if(replacementNode.isRed || removedNode.isRed){
+            if(RedBlackNode.isRed(replacementNode) || RedBlackNode.isRed(removedNode)){
+                replacementNode.color = Color.black
+            }else if(RedBlackNode.isBlack(replacementNode) && RedBlackNode.isBlack(removedNode)){//3
+                replacementNode.color = Color.doubleBlack//3.1
+                
 
-            }else if(!replacementNode.isRed && !removedNode.isRed){
-                replacementNode.isDoubleBlack = true
-
-                if(replacementNode.isDoubleBlack && replacementNode != root){
-
-                    var sibling = replacementNode.getBrother()
-                    
-                    if(!sibling.isRed && (sibling.get(Side.left).isRed || sibling.get(Side.right).isRed)){
-
-                    }
+                while(replacementNode.color == Color.doubleBlack && replacementNode != root){//3.2
+                    RedBlackNode.doubleBlackFix(replacementNode,removedNode,root)
                 }
             }
         }
 
-        static remove<T>(self:RedBlackNode<T>,key:number):RedBlackNode<T>{
-            return null
+        static doubleBlackFix<T>(replacementNode:RedBlackNode<T>,removedNode:RedBlackNode<T>,root:RedBlackNode<T>){
+            var sibling = replacementNode.getBrother()
+                    
+            if(RedBlackNode.isBlack(sibling)){//3.2 a b
+                
+                if(RedBlackNode.isRed(sibling.get(Side.left))){//a
+
+                } else if(RedBlackNode.isRed(sibling.get(Side.right))){//a
+                    
+                }else if(RedBlackNode.isBlack(sibling.get(Side.left)) && RedBlackNode.isBlack(sibling.get(Side.right))){//3.2b
+                    sibling.color = Color.red
+                    if(replacementNode.parent.color == Color.black){
+                        sibling.color = Color.red
+                        replacementNode.parent.color = Color.doubleBlack
+                        RedBlackNode.doubleBlackFix(replacementNode.parent,null,root)
+                    }else{
+                        replacementNode.parent.color = Color.black
+                    }
+
+                }
+            }else{//3.2 c  sibling is red
+                replacementNode.parent.color = Color.red
+                sibling.color = Color.black
+                if(sibling.isLeftOrRightChild() == Side.left){//3.2 c i
+                    RedBlackNode.rotate(replacementNode.parent,Side.right)
+                }else{//3.2 c ii
+                    RedBlackNode.rotate(replacementNode.parent,Side.left)
+                }
+                RedBlackNode.doubleBlackFix() //recur for double black
+            }
+        }
+
+        static remove<T>(self:RedBlackNode<T>,key:number,replacementNode:RedBlackNode<T>[]):RedBlackNode<T>{
+            var nodeToRemove:RedBlackNode<T> = RedBlackNode.search(self,key)
+            if(nodeToRemove === null){
+                return null
+            }
+            var parent = nodeToRemove.parent
+            var side = nodeToRemove.parent.get(Side.left) == nodeToRemove ? Side.left : Side.right
+    
+            var removeHelper = (side:Side,empty:() => void,full:() => void) => {
+                if(nodeToRemove.get(side) == null){
+                    empty()
+                }else{
+                    full()
+                }
+            }
+
+            var removeLeave = (side2remove:Side) => {
+                var child = nodeToRemove.children[side2remove]
+                child.parent = nodeToRemove.parent
+                parent.children[side] = child
+            }
+    
+            removeHelper(Side.left,
+                () => removeHelper(Side.right,
+                    () => parent.children[side] = null,//empty-empty
+                    () => removeLeave(Side.right)//empty-full
+                ),
+                () => removeHelper(Side.right,
+                    () => removeLeave(Side.left),//full-empty
+                    () => {//full-full
+                        var leftchild = nodeToRemove.get(Side.left)
+                        var rightchild = nodeToRemove.get(Side.right)
+                        var middleNode = nodeToRemove.get(Side.left).findExtreme(Side.right)
+
+                        middleNode.parent = parent
+                        middleNode.set(Side.left,leftchild)
+                        middleNode.set(Side.right,rightchild)
+                        leftchild.set(Side.right,null)
+                        leftchild.parent = middleNode
+                        rightchild.parent = middleNode
+                        parent.children[side] = middleNode
+                    }
+                ),
+            )
+            return nodeToRemove
+        }
+
+        findExtreme(side:Side):RedBlackNode<T>{
+            if(this.get(side) == null){
+                return this
+            }
+            return this.findExtreme(side)
         }
 
         static switchPath<T>(switcher:number,small:() => T,big:() => T,equal:() => T):T{
