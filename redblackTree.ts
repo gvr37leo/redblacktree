@@ -20,6 +20,11 @@ namespace BinaryTree{
             }
         }
 
+        print(ctxt:CanvasRenderingContext2D,center:number,totalwidth:number){
+            var array:RedBlackNode<T>[][] = this.toArray()
+            RedBlackNode.print(this.root,ctxt,totalwidth,center,0)
+        }
+
         toArray():RedBlackNode<T>[][]{
             var array:RedBlackNode<T>[][] = []
             RedBlackNode.toArray(this.root,array,0)
@@ -56,16 +61,41 @@ namespace BinaryTree{
         }
 
         static toArray<T>(node:RedBlackNode<T>,array:RedBlackNode<T>[][],depth:number){
-            if(node == null){
-                return
-            }
+            
             if(array[depth] == null){
                 array[depth] = []
+            }
+            if(node == null){
+                array[depth].push(null)    
+                return
             }
 
             array[depth].push(node)
             RedBlackNode.toArray(node.get(Side.left),array,depth + 1)
             RedBlackNode.toArray(node.get(Side.right),array,depth + 1)
+        }
+
+        static print<T>(self:RedBlackNode<T>,ctxt:CanvasRenderingContext2D,totalwidth:number,x:number,level:number){
+            if(self == null){
+                return
+            }
+            var offset = totalwidth / Math.pow(2,level + 2)
+
+            self.draw(ctxt,new Vector2(x,level * 50 + 50),level)
+
+            RedBlackNode.print(self.get(Side.left),ctxt,totalwidth,x - offset,level + 1)
+            RedBlackNode.print(self.get(Side.right),ctxt,totalwidth,x + offset,level + 1)
+        }
+        
+        draw(ctxt:CanvasRenderingContext2D, v:Vector2,depth:number){
+            ctxt.beginPath()
+            if(this.isRed){
+                ctxt.fillStyle = 'red'
+            }else{
+                ctxt.fillStyle = 'black'
+            }
+            ctxt.arc(v.x,v.y,40 / (Math.pow(2,depth) / (depth + 1 )) + 2,0,2 * Math.PI,false)
+            ctxt.fill()
         }
 
         static fix<T>(self:RedBlackNode<T>,root:RedBlackNode<T>){
