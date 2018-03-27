@@ -213,34 +213,65 @@ namespace BinaryTree{
                 replacementNode.color = Color.black
             }else if(RedBlackNode.isBlack(replacementNode) && RedBlackNode.isBlack(removedNode)){//3
                 replacementNode.color = Color.doubleBlack//3.1
-                
-
-                while(replacementNode.color == Color.doubleBlack && replacementNode != root){//3.2
-                    RedBlackNode.doubleBlackFix(replacementNode,removedNode,root)
-                }
+                RedBlackNode.doubleBlackFix(replacementNode,root)//3.2
             }
         }
 
-        static doubleBlackFix<T>(replacementNode:RedBlackNode<T>,removedNode:RedBlackNode<T>,root:RedBlackNode<T>){
+        static doubleBlackFix<T>(replacementNode:RedBlackNode<T>,root:RedBlackNode<T>){
             var sibling = replacementNode.getBrother()
+            var parent = replacementNode.parent
                     
             if(RedBlackNode.isBlack(sibling)){//3.2 a b
+                var sideOfSibling = sibling.isLeftOrRightChild()
+                var sides = [sideOfSibling]
                 
-                if(RedBlackNode.isRed(sibling.get(Side.left))){//a
 
-                } else if(RedBlackNode.isRed(sibling.get(Side.right))){//a
-                    
-                }else if(RedBlackNode.isBlack(sibling.get(Side.left)) && RedBlackNode.isBlack(sibling.get(Side.right))){//3.2b
+                if(RedBlackNode.isRed(sibling.get(Side.left)) && RedBlackNode.isRed(sibling.get(Side.right))){//both red
+                    sides.push(sideOfSibling)
+                }else if(RedBlackNode.isRed(sibling.get(Side.left))){//left red
+                    sides.push(Side.left)
+                }else if(RedBlackNode.isRed(sibling.get(Side.right))){//right red
+                    sides.push(Side.right)
+                }else{//both black
                     sibling.color = Color.red
                     if(replacementNode.parent.color == Color.black){
                         sibling.color = Color.red
                         replacementNode.parent.color = Color.doubleBlack
-                        RedBlackNode.doubleBlackFix(replacementNode.parent,null,root)
+                        RedBlackNode.doubleBlackFix(replacementNode.parent,root)
                     }else{
                         replacementNode.parent.color = Color.black
                     }
-
                 }
+
+
+                function rbLineRotate(side:Side){
+                    sibling.color = Color.red
+                    redChild.color = Color.black
+                    RedBlackNode.rotate(sibling,swapSide(side))
+                    RedBlackNode.rotate(sibling.parent,side)
+                }
+
+                var redChild = sibling.get(sides[1])
+                if(sides[0] == Side.left){
+                    if(sides[1] == Side.left){//l-l
+                        RedBlackNode.rotate(parent,Side.right)
+                        redChild.color = Color.black
+                    }else{//l-r
+                        rbLineRotate(Side.right)   
+                    }
+                }else{
+                    if(sides[1] == Side.left){//r-l
+                        rbLineRotate(Side.left)
+                    }else{//r-r
+                        RedBlackNode.rotate(parent,Side.left)
+                        redChild.color = Color.black
+                    }
+                }
+
+                
+
+
+
             }else{//3.2 c  sibling is red
                 replacementNode.parent.color = Color.red
                 sibling.color = Color.black
@@ -249,7 +280,7 @@ namespace BinaryTree{
                 }else{//3.2 c ii
                     RedBlackNode.rotate(replacementNode.parent,Side.left)
                 }
-                RedBlackNode.doubleBlackFix() //recur for double black
+                // RedBlackNode.doubleBlackFix() //recur for double black
             }
         }
 
