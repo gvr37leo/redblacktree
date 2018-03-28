@@ -81,6 +81,16 @@ class BinaryTreeNode<T>{
         BinaryTreeNode.print(self.getChild(Side.right),ctxt,totalwidth,x + offset,level + 1)
     }
 
+    draw(ctxt:CanvasRenderingContext2D,v:Vector2,depth:number){
+        ctxt.beginPath()
+
+        ctxt.fillStyle = 'black'
+        ctxt.arc(v.x,v.y, 20,0,2 * Math.PI,false)
+        ctxt.fill()
+        ctxt.fillStyle = 'white'
+        ctxt.fillText(`${this.key}`,v.x,v.y)
+    }
+
     getChild(side:Side):BinaryTreeNode<T>{
         return this.children[side]
     }
