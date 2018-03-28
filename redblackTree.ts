@@ -7,7 +7,7 @@ namespace BinaryTree{
     //4 all paths from a node to its nil descendants contain the same number of black nodes
 
 
-    export class RedBlackTree<T>{
+    export class RedBlackTree3<T>{
 
         root:RedBlackNode<T> = null
 
@@ -18,6 +18,10 @@ namespace BinaryTree{
                 RedBlackNode.rbInsert(this.root,new RedBlackNode(key,val,Color.red),this.root)
                 this.root = RedBlackNode.getRoot(this.root)
             }
+        }
+
+        delete(key:number){
+            RedBlackNode.rbRemove(this.root,key,this.root)
         }
 
         print(ctxt:CanvasRenderingContext2D,center:number,totalwidth:number){
@@ -36,9 +40,7 @@ namespace BinaryTree{
 
     enum Color{red,black,doubleBlack}
 
-    function swapSide(side:Side):Side{
-        return 1 - side
-    }
+    
     
     class RedBlackNode<T>{
         children:RedBlackNode<T>[] = [null,null]
@@ -95,8 +97,10 @@ namespace BinaryTree{
             }else{
                 ctxt.fillStyle = 'black'
             }
-            ctxt.arc(v.x,v.y,40 / (Math.pow(2,depth) / (depth + 1 )) + 2,0,2 * Math.PI,false)
+            ctxt.arc(v.x,v.y, 20,0,2 * Math.PI,false)
             ctxt.fill()
+            ctxt.fillStyle = 'white'
+            ctxt.fillText(`${this.key}`,v.x,v.y)
         }
 
         static insertfix<T>(self:RedBlackNode<T>,root:RedBlackNode<T>){
@@ -212,14 +216,12 @@ namespace BinaryTree{
             if(RedBlackNode.isRed(replacementNode) || RedBlackNode.isRed(removedNode)){
                 replacementNode.color = Color.black
             }else if(RedBlackNode.isBlack(replacementNode) && RedBlackNode.isBlack(removedNode)){//3
-                replacementNode.color = Color.doubleBlack//3.1
-                RedBlackNode.doubleBlackFix(replacementNode,root)//3.2
+                // replacementNode.color = Color.doubleBlack//3.1
+                RedBlackNode.doubleBlackFix(replacementNode,removedNode.getBrother(),removedNode.parent,root)//3.2
             }
         }
 
-        static doubleBlackFix<T>(replacementNode:RedBlackNode<T>,root:RedBlackNode<T>){
-            var sibling = replacementNode.getBrother()
-            var parent = replacementNode.parent
+        static doubleBlackFix<T>(doubleBlackNode:RedBlackNode<T>,sibling:RedBlackNode<T>,parent:RedBlackNode<T>,root:RedBlackNode<T>){
                     
             if(RedBlackNode.isBlack(sibling)){//3.2 a b
                 var sideOfSibling = sibling.isLeftOrRightChild()
@@ -234,17 +236,16 @@ namespace BinaryTree{
                     sides.push(Side.right)
                 }else{//both black
                     sibling.color = Color.red
-                    if(replacementNode.parent.color == Color.black){
-                        sibling.color = Color.red
-                        replacementNode.parent.color = Color.doubleBlack
-                        RedBlackNode.doubleBlackFix(replacementNode.parent,root)
+                    if(RedBlackNode.isBlack(parent)){
+                        parent.color = Color.doubleBlack
+                        RedBlackNode.doubleBlackFix(parent,parent.getBrother(),parent.parent,root)
                     }else{
-                        replacementNode.parent.color = Color.black
+                        doubleBlackNode.parent.color = Color.black
                     }
                 }
 
 
-                function rbLineRotate(side:Side){
+                function rbTriangleRotate(side:Side){
                     sibling.color = Color.red
                     redChild.color = Color.black
                     RedBlackNode.rotate(sibling,swapSide(side))
@@ -257,11 +258,11 @@ namespace BinaryTree{
                         RedBlackNode.rotate(parent,Side.right)
                         redChild.color = Color.black
                     }else{//l-r
-                        rbLineRotate(Side.right)   
+                        rbTriangleRotate(Side.right)   
                     }
                 }else{
                     if(sides[1] == Side.left){//r-l
-                        rbLineRotate(Side.left)
+                        rbTriangleRotate(Side.left)
                     }else{//r-r
                         RedBlackNode.rotate(parent,Side.left)
                         redChild.color = Color.black
@@ -273,12 +274,12 @@ namespace BinaryTree{
 
 
             }else{//3.2 c  sibling is red
-                replacementNode.parent.color = Color.red
+                doubleBlackNode.parent.color = Color.red
                 sibling.color = Color.black
                 if(sibling.isLeftOrRightChild() == Side.left){//3.2 c i
-                    RedBlackNode.rotate(replacementNode.parent,Side.right)
+                    RedBlackNode.rotate(doubleBlackNode.parent,Side.right)
                 }else{//3.2 c ii
-                    RedBlackNode.rotate(replacementNode.parent,Side.left)
+                    RedBlackNode.rotate(doubleBlackNode.parent,Side.left)
                 }
                 // RedBlackNode.doubleBlackFix() //recur for double black
             }
@@ -300,19 +301,23 @@ namespace BinaryTree{
                 }
             }
 
-            var removeLeave = (side2remove:Side) => {
+            var removeSingleChild = (side2remove:Side) => {
                 var child = nodeToRemove.children[side2remove]
                 child.parent = nodeToRemove.parent
                 parent.children[side] = child
+                replacementNode.push(child)
             }
     
             removeHelper(Side.left,
                 () => removeHelper(Side.right,
-                    () => parent.children[side] = null,//empty-empty
-                    () => removeLeave(Side.right)//empty-full
+                    () => {
+                        parent.children[side] = null
+                        replacementNode.push(null)
+                    },//empty-empty
+                    () => removeSingleChild(Side.right)//empty-full
                 ),
                 () => removeHelper(Side.right,
-                    () => removeLeave(Side.left),//full-empty
+                    () => removeSingleChild(Side.left),//full-empty
                     () => {//full-full
                         var leftchild = nodeToRemove.get(Side.left)
                         var rightchild = nodeToRemove.get(Side.right)
@@ -325,6 +330,7 @@ namespace BinaryTree{
                         leftchild.parent = middleNode
                         rightchild.parent = middleNode
                         parent.children[side] = middleNode
+                        replacementNode.push(middleNode)
                     }
                 ),
             )
