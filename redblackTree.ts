@@ -40,7 +40,9 @@ namespace BinaryTree{
 
     enum Color{red,black,doubleBlack}
 
-    
+    function swapSide(side:Side):Side{
+        return 1 - side
+    }
     
     class RedBlackNode<T>{
         children:RedBlackNode<T>[] = [null,null]

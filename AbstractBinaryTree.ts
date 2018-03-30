@@ -156,7 +156,25 @@ class BinaryTreeNode<T>{
         }
     }
 
-    static remove<T>(self:BinaryTreeNode<T>,key:number,outReplacementNode:BinaryTreeNode<T>[]):BinaryTreeNode<T>{
+    static rotate<T>(node:BinaryTreeNode<T>, side:Side){
+        var oppositeSide:Side = swapSide(side)
+        var parent:BinaryTreeNode<T> = node.parent
+        var child:BinaryTreeNode<T> = node.getChild(oppositeSide)
+        var grandchild:BinaryTreeNode<T> = child.getChild(side)
+
+        child.parent = parent
+        node.setChild(oppositeSide,grandchild)
+        if(grandchild){
+            grandchild.parent = node
+        }
+        if(parent){
+            parent.setChild(node.isLeftOrRightChild(), child)
+        }
+        child.setChild(side,node)
+        node.parent = child
+    }
+
+    static remove<T>(self:BinaryTreeNode<T>,key:number,root:BinaryTreeNode<T>,outReplacementNode:BinaryTreeNode<T>[]):BinaryTreeNode<T>{
         var nodeToRemove:BinaryTreeNode<T> = BinaryTreeNode.search(self,key)
         if(nodeToRemove === null){
             return null
